@@ -4,7 +4,7 @@ import { getLogger } from "./sleepingLogger";
 import { getMinecraftDirectory, loadFile } from "./sleepingHelper";
 import path from "path";
 
-import PropertiesReader = require("properties-reader");
+import { propertiesReader } from "properties-reader";
 
 const logger = getLogger();
 
@@ -21,7 +21,6 @@ export type Settings = {
   bedrockPort?: number;
   maxPlayers: number;
   loginMessage: string;
-  serverOnlineMode: boolean;
   webPort?: number;
   webStopOnStart?: boolean;
   webServeDynmap?: boolean | string;
@@ -49,7 +48,6 @@ export type Settings = {
   useNativeFiles: boolean;
   hideIpInLogs?: boolean;
   hideOnConnectionLogs?: boolean;
-  useLegacyLogin?: boolean;
 };
 
 export const DefaultSettings: Settings = {
@@ -59,8 +57,6 @@ export const DefaultSettings: Settings = {
   maxPlayers: 20,
 
   loginMessage: "...Waking server up, come back in a minute...",
-  serverOnlineMode: false,
-  useLegacyLogin: true,
 
   startMinecraft: true, // false to disable
   minecraftCommand: "java -jar paper.jar --nogui",
@@ -104,8 +100,11 @@ function saveDefault() {
     logger.info(`Saving default settings to ${SettingFilePath}`);
     const yamlToWrite = dump(DefaultSettings);
     writeFileSync(SettingFilePath, yamlToWrite);
-  } catch (error: any) {
-    logger.error("Failed to write setting.", error?.message);
+  } catch (error: unknown) {
+    logger.error(
+      "Failed to write setting.",
+      error instanceof Error ? error.message : error,
+    );
   }
 }
 
@@ -118,14 +117,14 @@ export function getSettings(): Settings {
     if (settings.useNativeFiles) {
       try {
         applyNativeProperties(settings);
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(
           `useNativeFiles is specified, but wasn't able to read ${NativePropertiesFilePath}.`,
           error
         );
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to load setting, using default.", error);
 
     try {
@@ -166,7 +165,11 @@ export function getWhitelistEntries(
   if (!settings.useWhitelistFile) {
     return undefined; // Don't attempt to load if not enabled
   }
-  return loadFile(WhitelistFilePath, "whitelist entries", settings);
+  return loadFile<WhitelistEntry[]>(
+    WhitelistFilePath,
+    "whitelist entries",
+    settings,
+  );
 }
 
 export function getBannerIpEntries(
@@ -175,7 +178,7 @@ export function getBannerIpEntries(
     if (!settings.useBlacklistFiles) {
         return undefined; // Don't attempt to load if not enabled
       }
-  return loadFile(BannedIpsFilePath, "banned ips", settings);
+  return loadFile<BannedIpEntry[]>(BannedIpsFilePath, "banned ips", settings);
 }
 
 export function getBannerPlayerEntries(
@@ -184,31 +187,34 @@ export function getBannerPlayerEntries(
     if (!settings.useBlacklistFiles) {
         return undefined; // Don't attempt to load if not enabled
       }
-  return loadFile(BannedPlayersFilePath, "banned players", settings);
+  return loadFile<BannedPlayerEntry[]>(
+    BannedPlayersFilePath,
+    "banned players",
+    settings,
+  );
 }
 
 export function applyNativeProperties(settings: Settings) {
-  const properties = PropertiesReader(
-    path.join(getMinecraftDirectory(settings), NativePropertiesFilePath)
-  );
+  const properties = propertiesReader({
+    sourceFile: path.join(
+      getMinecraftDirectory(settings),
+      NativePropertiesFilePath
+    ),
+  });
 
   logger.info(`Loaded server.properties: ${JSON.stringify(properties)}`);
 
   const portProperty = properties.get("query.port");
   const maxPlayersProperty = properties.get("max-players");
-  const serverOnlineModeProperty = properties.get("online-mode");
   const useWhitelistFileProperty = properties.get("white-list");
   if (portProperty) {
-    settings.serverPort = portProperty.valueOf() as number;
+    settings.serverPort = portProperty as number;
   }
   if (maxPlayersProperty) {
-    settings.maxPlayers = maxPlayersProperty.valueOf() as number;
-  }
-  if (serverOnlineModeProperty) {
-    settings.serverOnlineMode = serverOnlineModeProperty.valueOf() as boolean;
+    settings.maxPlayers = maxPlayersProperty as number;
   }
   if (useWhitelistFileProperty) {
-    settings.useWhitelistFile = useWhitelistFileProperty.valueOf() as boolean;
+    settings.useWhitelistFile = useWhitelistFileProperty as boolean;
   }
   settings.useBlacklistFiles = true;
 }

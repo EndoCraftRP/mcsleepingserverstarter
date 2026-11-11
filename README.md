@@ -6,15 +6,15 @@
     </p>
     <p>
 
-[Tutorial Video](https://youtu.be/WqvQISpr6-s) | [Based on minecraft-protocol](https://github.com/PrismarineJS/node-minecraft-protocol) | [Based on JSPrismarine](https://github.com/JSPrismarine/JSPrismarine) | [Original idea](https://github.com/tustin2121/MCSignOnDoor)
+[Tutorial Video](https://youtu.be/WqvQISpr6-s) | [Original idea](https://github.com/tustin2121/MCSignOnDoor)
 
 </p>
 </div>
 
 ## ✅ Compatible versions
 
-- Minecraft Java: up to 1.20.2 (partial 1.21.3) by [node-minecraft-protocol](https://github.com/PrismarineJS/node-minecraft-protocol)
-- Bedrock: 1.21.40 by [JSPrismarine](https://github.com/JSPrismarine/JSPrismarine)
+- Minecraft Java: clients using the standard Java handshake and login-start packets (account verification is not performed)
+- Bedrock: basic RakNet discovery and connection handling; clients are disconnected before world login
 
 ## 🧰 Features
 
@@ -32,7 +32,7 @@ There are multiple ways to run SleepingServerStarter:
 
 ### 📦 Download the binaries (easiest)
 
-1. [Download binaries](https://github.com/vincss/mcsleepingserverstarter) corresponding to your OS
+1. [Download binaries](https://github.com/vincss/mcsleepingserverstarter/releases) corresponding to your OS
 2. Place the executable in the same working directory 
    - same folder as your server file (`spigot.jar`, `paper.jar`, etc)
 3. Make sure your server is stopped
@@ -41,11 +41,20 @@ There are multiple ways to run SleepingServerStarter:
 
 ### 📜 Manually install and compile
 
-0. Requires [NodeJS](https://nodejs.org) v16+
+0. Requires [NodeJS](https://nodejs.org) v24 LTS or later
 1. Clone the repo or download the project as Zip
 2. Unzip or clone it **in the same folder as your minecraft server**
 3. Launch `npm ci`
 4. Start the project with `npm start`
+
+To build a standalone executable for the current platform, run `npm run build`.
+The build uses Node.js Single Executable Applications and embeds the web interface
+assets in the executable. Windows builds are compressed with UPX 5.2.1; install
+UPX to build that target locally. Linux SEA binaries are not UPX-compressed
+because UPX cannot currently pack their ELF layout. UPX is not used for macOS
+because its current releases do not support macOS executables. Compressed
+executables may trigger antivirus false positives. CI builds Windows x64, Linux
+x64 and arm64, macOS x64 and arm64, and Alpine Linux arm64 releases.
 
 ### 🐋 Docker
 
@@ -77,11 +86,7 @@ via [Unofficial pterodactyl-installer](https://github.com/vilhelmprytz/pterodact
 
 ## ⚙️ Settings
 
-SleepingServerStarter configfile: `sleepingSettings.yml`
-JSPrismarine configfile: `config.yaml`
-
-**Change `sleepingSettings.yml` for Java Edition, Change `config.yaml` for Bedrock Edition**
-`sleepingSettings.yml` except `bedrockPort` for Bedrock Edition
+Configure both Java and Bedrock listeners in `sleepingSettings.yml`.
 
 > Note: If running from binaries, the settings file will be created after the first execution in the same folder as the executable.
 
@@ -94,9 +99,8 @@ JSPrismarine configfile: `config.yaml`
 | `serverPort`                | The port of your Java Edition server (0 to disable)                                                                                                                                                                                      | 25565                                           |
 | `bedrockPort`               | The port of your Bedrock Edition server (0 to disable)                                                                                                                                                                                   | 19132                                           |
 | `loginMessage`              | Message shown when the server is off and someone is trying to connect                                                                                                                                                                    | "...Waking server up, come back in a minute..." |
-| `serverOnlineMode`          | Check if players has premium accounts                                                                                                                                                                                                    | false                                            |
 | `maxPlayers`                | Maximum amount of players                                                                                                                                                                                                                | 20                                              |
-| `useNativeFiles`            | Use Minecraft `server.properties` to overwrite `serverPort`, `maxPlayers`, `serverOnlineMode`, `useWhitelistFile`, and `useBlacklistFiles` properties                                                                                    | false                                           |
+| `useNativeFiles`            | Use Minecraft `server.properties` to overwrite `serverPort`, `maxPlayers`, `useWhitelistFile`, and `useBlacklistFiles` properties                                                                                                        | false                                           |
 | `webPort`                   | Port for the Web-Gui                                                                                                                                                                                                                     | 0                                               |
 | `webStopOnStart`            | Stop the web-server when minecraft starts                                                                                                                                                                                                | false                                           |
 | `webServeDynmap`            | true or an absolute path to enable it, by default it will serve './plugins/dynmap/web/'. You can specify an absolute path to serve instead or an url to redirect to. [How use with dynamp](./wiki/Use-internal-SSS-WebServer-for-dynmap) | false                                           |
@@ -121,15 +125,9 @@ JSPrismarine configfile: `config.yaml`
 | `useBlacklistFiles`         | Use Minecraft `banned-ips.json` and `banned-players.json` to prevent players from waking up the server. Can be used together with `blackListedAddress` property                                                                          | false                                           |
 | `hideIpInLogs`              | Hide the ip from the remote player in the logs                                                                                                                                                                                           | false                                           |
 | `hideOnConnectionLogs`      | Hide 'A Prince has taken a quick peek' the logs                                                                                                                                                                                          | false                                           |
-| `useLegacyLogin`            | use legacy "login" method from [minecraft-protocol](https://github.com/PrismarineJS/node-minecraft-protocol/issues/1279#issuecomment-1878866611)                                                                                         | false                                           |
 
 > Note: if you need to shutdown the program, simply input a `ctrl + c`, the program will shut down
 > normally afterwards
-
----
-### JSPrismarine config
-
-[JSPrismarine Documents](https://jsprismarine.org/docs)
 
 #### Links :
 
@@ -146,10 +144,7 @@ Installing SleepingServerStarter only on your proxy server will <u>**NOT work**<
 
 For each server you're installing SleepingServerStarter on :
 
-- the `serverPort` should be the port of the server you're installing the program on, not the
-  proxy's port
-- make sure `serverOnlineMode` is set to `false` to avoid any problems with Bungee when switching
-  between servers
+- set `serverPort` to the port of the server you're installing the program on, not the proxy's port
 
 We know this can be a little bit time consuming, but this solution is working great
 
@@ -177,6 +172,9 @@ Give a ⭐️ if you like the project!
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/vincss)
 
 ## 📜 ChangeLog
+- 2.0.0 
+  - Replace protocol dependencies with lightweight Java and Bedrock connection handlers; organize protocol files by edition.
+  - Replace packaging for node Single-executable application ( + UXP for Windows )
 - 1.11.4 - MC 1.21.x / Bedrock 1.21.40 : 
   - update minecraft-protocol: 1.57.0 
   - update @jsprismarine/prismarine: 0.13.1 
